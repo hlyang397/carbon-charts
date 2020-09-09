@@ -59,9 +59,6 @@ export class ZoomBar extends Component {
 
 	render(animate = true) {
 		const svg = this.getContainerSVG();
-		const options = this.model.getOptions();
-
-		const isDataLoading = Tools.getProperty(options, "data", "loading");
 
 		const zoombarType = Tools.getProperty(
 			this.model.getOptions(),
@@ -139,11 +136,46 @@ export class ZoomBar extends Component {
 			if (!defaultDomain) {
 				return;
 			}
+
+			const initialZoomDomainInModel = this.model.get(
+				"initialZoomDomain"
+			);
+			// get initZoomDomain
+			const initialZoomDomainInProp = Tools.getProperty(
+				this.model.getOptions(),
+				"zoomBar",
+				"top",
+				"initialZoomDomain"
+			);
+
+			// update initialZoomDomain and set zoomDomain in model only if the configuration is changed
+			// not the same object, or both start date and end date are not equal
+			if (
+				!(
+					initialZoomDomainInModel === initialZoomDomainInProp ||
+					(initialZoomDomainInModel &&
+						initialZoomDomainInProp &&
+						initialZoomDomainInModel[0].valueOf() ===
+							initialZoomDomainInProp[0].valueOf() &&
+						initialZoomDomainInModel[1].valueOf() ===
+							initialZoomDomainInProp[1].valueOf())
+				)
+			) {
+				this.model.set(
+					{
+						initialZoomDomain: initialZoomDomainInProp,
+						zoomDomain: initialZoomDomainInProp
+							? initialZoomDomainInProp
+							: defaultDomain
+					},
+					{ skipUpdate: true }
+				);
+			}
+
 			// save defaultZoomBarDomain if not set yet
 			if (!this.initialZoomBarDomain) {
 				this.initialZoomBarDomain = defaultDomain;
 			}
-
 			// add value 0 to the extended domain for zoom bar area graph
 			this.compensateDataForDefaultDomain(
 				zoomBarData,
