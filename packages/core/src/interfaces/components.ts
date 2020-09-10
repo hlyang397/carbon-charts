@@ -102,9 +102,56 @@ export interface StackedBarOptions extends BarOptions {
 }
 
 /**
+ * customize the Toolbar component
+ */
+export interface ToolbarOptions {
+	/**
+	 * is the toolbar visible or not
+	 */
+	enabled?: boolean;
+	/**
+	 * toolbar overflow menu options
+	 */
+	overflowMenuItems?: ToolbarOverflowMenuItems;
+}
+
+/**
+ * set Toolbar overflow menu items
+ */
+export interface ToolbarOverflowMenuItems {
+	resetZoom?: ToolbarOverflowMenuItems;
+
+	// add more overflow menu items here
+}
+
+/**
+ * options for each toolbar overflow menu item
+ */
+export interface ToolbarOverflowMenuItemOptions {
+	/**
+	 * is the overflow menu item visible or not
+	 */
+	enabled?: boolean;
+	/**
+	 * the text to display in the overflow menu item
+	 */
+	text: string;
+}
+
+/**
  * customize the ZoomBars in a chart
  */
 export interface ZoomBarsOptions {
+	/**
+	 * a variable to handle default zoom-in ratio (0 ~ 1.0)
+	 * ex: shift click zoom in ratio
+	 */
+	zoomRatio?: number;
+	/**
+	 * a variable to define the minimum zoom ratio (0 ~ 1.0)
+	 * If  ( zoom domain / max domain ) < minZoomRatio, zoom-in functions will be disabled
+	 */
+	minZoomRatio?: number;
 	/**
 	 * currently only the top position is supported
 	 */

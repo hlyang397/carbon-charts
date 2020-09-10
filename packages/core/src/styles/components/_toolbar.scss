@@ -1,0 +1,70 @@
+$css--reset: false;
+@import "./../vendor/carbon-components/src/components/overflow-menu/overflow-menu";
+
+g.#{$prefix}--#{$charts-prefix}--toolbar {
+	@include carbon--motion(standard, expressive);
+
+	.toolbar-container {
+		.toolbar-button {
+			fill: $ui-background;
+			cursor: pointer;
+			&:hover {
+				.toolbar-button-background {
+					fill: $hover-ui;
+				}
+				.toolbar-button-background--disabled {
+					fill: $ui-background;
+				}
+			}
+
+			&-icon {
+				pointer-events: visible;
+				circle {
+					fill: $icon-02;
+				}
+				rect {
+					fill: $icon-02;
+				}
+				path {
+					fill: $icon-02;
+				}
+				polygon {
+					fill: $icon-02;
+				}
+				&:hover {
+					cursor: pointer;
+					pointer-events: visible;
+				}
+			}
+
+			&-icon--disabled {
+				pointer-events: auto;
+				circle {
+					fill: $disabled-03;
+				}
+				rect {
+					fill: $disabled-03;
+				}
+				path {
+					fill: $disabled-03;
+				}
+				polygon {
+					fill: $disabled-03;
+				}
+				&:hover {
+					cursor: auto;
+					pointer-events: auto;
+				}
+			}
+
+			&--hovered {
+				fill: $hover-ui;
+			}
+			&--disabled {
+				cursor: auto;
+			}
+		}
+	}
+}
+
+@include overflow-menu;
