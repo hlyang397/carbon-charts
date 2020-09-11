@@ -126,6 +126,10 @@ export interface ZoomBarOptions {
 	 */
 	type?: ZoomBarTypes;
 	/**
+	 * a variable to handle zoom in ratio (0 ~ 1.0)
+	 */
+	zoomRatio?: number;
+	/**
 	 * an two element array which represents the initial zoom domain
 	 */
 	initialZoomDomain?: Object[];
@@ -133,4 +137,46 @@ export interface ZoomBarOptions {
 	 * options related to zoom bar data
 	 */
 	data?: Object[];
+
+	/**
+	 * whether keep refreshing range axis label while zoom domain is changing
+	 */
+	refreshRangeAxisLabel?: boolean;
+}
+
+/**
+ * customize the Toolbar component
+ */
+export interface ToolbarOptions {
+	/**
+	 * is the toolbar visible or not
+	 */
+	enabled?: boolean;
+	/**
+	 * toolbar overflow menu options
+	 */
+	overflowMenuItems?: ToolbarOverflowMenuItems;
+}
+
+/**
+ * set Toolbar overflow menu items
+ */
+export interface ToolbarOverflowMenuItems {
+	resetZoom?: ToolbarOverflowMenuItems;
+
+	// add more overflow menu items here
+}
+
+/**
+ * options for each toolbar overflow menu item
+ */
+export interface ToolbarOverflowMenuItemOptions {
+	/**
+	 * is the overflow menu item visible or not
+	 */
+	enabled?: boolean;
+	/**
+	 * the text to display in the overflow menu item
+	 */
+	text: string;
 }

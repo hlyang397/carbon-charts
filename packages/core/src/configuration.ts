@@ -20,7 +20,11 @@ import {
 	LegendOptions,
 	StackedBarOptions,
 	MeterChartOptions,
+	ZoomBarOptions,
 	ZoomBarsOptions,
+	ToolbarOptions,
+	ToolbarOverflowMenuItems,
+	ToolbarOverflowMenuItemOptions,
 	// ENUMS
 	Alignments,
 	GaugeTypes,
@@ -153,9 +157,20 @@ const axisChart: AxisChartOptions = Tools.merge({}, chart, {
 	zoomBar: {
 		top: {
 			enabled: false,
-			type: ZoomBarTypes.GRAPH_VIEW
-		}
-	} as ZoomBarsOptions
+			type: ZoomBarTypes.GRAPH_VIEW,
+			zoomRatio: 0.4,
+			refreshRangeAxisLabel: false
+		} as ZoomBarOptions
+	} as ZoomBarsOptions,
+	toolbar: {
+		enabled: false,
+		overflowMenuItems: {
+			resetZoom: {
+				enabled: true,
+				text: "Reset zoom"
+			} as ToolbarOverflowMenuItemOptions
+		} as ToolbarOverflowMenuItems
+	} as ToolbarOptions
 } as AxisChartOptions);
 
 /**
@@ -357,6 +372,24 @@ export const options = {
 	meterChart,
 	radarChart,
 	gaugeChart
+};
+
+export const zoomBar = {
+	height: {
+		[ZoomBarTypes.GRAPH_VIEW]: 32,
+		[ZoomBarTypes.SLIDER_VIEW]: 10
+	},
+	spacerHeight: 20,
+	handleWidth: 5,
+	handleBarWidth: 1,
+	handleBarHeight: 12
+};
+
+export const toolbar = {
+	iconSize: 32,
+	height: 32,
+	spacerHeight: 10,
+	iconPadding: 6
 };
 
 export * from "./configuration-non-customizable";

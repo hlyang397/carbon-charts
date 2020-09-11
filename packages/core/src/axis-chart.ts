@@ -5,9 +5,7 @@ import {
 	LegendOrientations,
 	LegendPositions,
 	ChartConfig,
-	AxisChartOptions,
-	AxisPositions,
-	ScaleTypes
+	AxisChartOptions
 } from "./interfaces";
 import {
 	ChartBrush,
@@ -17,8 +15,9 @@ import {
 	Title,
 	AxisChartsTooltip,
 	Spacer,
+	Toolbar,
 	ZoomBar
-} from "./components";
+} from "./components/index";
 import { Tools } from "./tools";
 
 import { CartesianScales, Curves, Zoom } from "./services";
@@ -35,30 +34,50 @@ export class AxisChart extends Chart {
 	}
 
 	protected getAxisChartComponents(graphFrameComponents: any[]) {
-		const isZoomBarEnabled = Tools.getProperty(
+		const zoomBarEnabled = this.services.zoom.isZoomBarEnabled();
+
+		const toolbarEnabled = Tools.getProperty(
 			this.model.getOptions(),
-			"zoomBar",
-			"top",
+			"toolbar",
 			"enabled"
 		);
 
-		this.services.cartesianScales.findDomainAndRangeAxes(); // need to do this before getMainXAxisPosition()
-		const mainXAxisPosition = this.services.cartesianScales.getMainXAxisPosition();
-		const mainXScaleType = Tools.getProperty(
-			this.model.getOptions(),
-			"axes",
-			mainXAxisPosition,
-			"scaleType"
-		);
-		// @todo - Zoom Bar only supports main axis at BOTTOM axis and time scale for now
-		const zoomBarEnabled =
-			isZoomBarEnabled &&
-			mainXAxisPosition === AxisPositions.BOTTOM &&
-			mainXScaleType === ScaleTypes.TIME;
+		const titleAvailable = !!this.model.getOptions().title;
 
 		const titleComponent = {
 			id: "title",
 			components: [new Title(this.model, this.services)],
+			growth: {
+				x: LayoutGrowth.STRETCH,
+				y: LayoutGrowth.FIXED
+			}
+		};
+
+		const toolbarComponent = {
+			id: "toolbar",
+			components: [new Toolbar(this.model, this.services)],
+			growth: {
+				x: LayoutGrowth.PREFERRED,
+				y: LayoutGrowth.FIXED
+			}
+		};
+
+		const headerComponent = {
+			id: "header",
+			components: [
+				new LayoutComponent(
+					this.model,
+					this.services,
+					[
+						// always add title to keep layout correct
+						titleComponent,
+						...(toolbarEnabled ? [toolbarComponent] : [])
+					],
+					{
+						direction: LayoutDirection.ROW
+					}
+				)
+			],
 			growth: {
 				x: LayoutGrowth.PREFERRED,
 				y: LayoutGrowth.FIXED
@@ -162,12 +181,18 @@ export class AxisChart extends Chart {
 
 		// Add chart title if it exists
 		const topLevelLayoutComponents = [];
-		if (this.model.getOptions().title) {
-			topLevelLayoutComponents.push(titleComponent);
+		if (titleAvailable || toolbarEnabled) {
+			topLevelLayoutComponents.push(headerComponent);
 
 			const titleSpacerComponent = {
 				id: "spacer",
-				components: [new Spacer(this.model, this.services)],
+				components: [
+					new Spacer(
+						this.model,
+						this.services,
+						toolbarEnabled ? { size: 10 } : undefined
+					)
+				],
 				growth: {
 					x: LayoutGrowth.PREFERRED,
 					y: LayoutGrowth.FIXED

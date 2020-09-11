@@ -2,10 +2,11 @@
 import { Component } from "../component";
 import { Events, ScaleTypes } from "../../interfaces";
 import { DOMUtils } from "../../services";
+import { Tools } from "../../tools";
 
 // D3 Imports
 import { brushX } from "d3-brush";
-import { event } from "d3-selection";
+import { event, mouse } from "d3-selection";
 import { scaleTime } from "d3-scale";
 
 // This class is used for handle brush events in chart
@@ -19,6 +20,8 @@ export class ChartBrush extends Component {
 	frontSelectionSelector = "rect.frontSelection"; // needs to match the class name in _grid-brush.scss
 
 	render(animate = true) {
+		const zoomRatio = this.services.zoom.getZoomRatio();
+
 		const svg = this.parent;
 		// use this area to display selection above all graphs
 		const frontSelectionArea = this.getContainerSVG();
@@ -29,6 +32,14 @@ export class ChartBrush extends Component {
 		// use this area to handle d3 brush events
 		const brushArea = DOMUtils.appendOrSelect(backdrop, `g.${this.type}`);
 
+		if (
+			this.services.zoom.isDataLoading() ||
+			this.services.zoom.isEmptyState()
+		) {
+			brushArea.html(null);
+			return;
+		}
+
 		// set an id for rect.selection to be referred
 		const d3Selection = DOMUtils.appendOrSelect(
 			brushArea,
@@ -38,8 +49,17 @@ export class ChartBrush extends Component {
 		const { width, height } = DOMUtils.getSVGElementSize(backdrop, {
 			useAttrs: true
 		});
+		// initialization is not completed yet
+		if (width === 0 || height === 0) {
+			return;
+		}
 
 		const { cartesianScales } = this.services;
+		let axesLeftMargin = 0;
+		const axesMargins = this.model.get("axesMargins");
+		if (axesMargins && axesMargins.left) {
+			axesLeftMargin = axesMargins.left;
+		}
 		const mainXScaleType = cartesianScales.getMainXScaleType();
 		const mainXScale = cartesianScales.getMainXScale();
 		const [xScaleStart, xScaleEnd] = mainXScale.range();
@@ -49,13 +69,19 @@ export class ChartBrush extends Component {
 			this.frontSelectionSelector
 		);
 
+		const setDomain = (newDomain) => {
+			this.model.set({ zoomDomain: newDomain }, { animate: false });
+		};
+
 		if (mainXScale && mainXScaleType === ScaleTypes.TIME) {
 			// get current zoomDomain
 			let zoomDomain = this.model.get("zoomDomain");
 			if (zoomDomain === undefined) {
 				// default to full range with extended domain
 				zoomDomain = this.services.zoom.getDefaultZoomBarDomain();
-				this.model.set({ zoomDomain: zoomDomain }, { animate: false });
+				if (zoomDomain) {
+					setDomain(zoomDomain);
+				}
 			}
 
 			const updateSelectionDash = (selection) => {
@@ -129,37 +155,44 @@ export class ChartBrush extends Component {
 					});
 				}
 			};
+
+			const handleZoomDomain = (startPoint, endPoint) => {
+				// create xScale based on current zoomDomain
+				const xScale = scaleTime()
+					.range([axesLeftMargin, width])
+					.domain(zoomDomain);
+
+				let newDomain = [
+					xScale.invert(startPoint),
+					xScale.invert(endPoint)
+				];
+
+				// if selected start time and end time are the same
+				// reset to default full range
+				if (newDomain[0].valueOf() === newDomain[1].valueOf()) {
+					// same as d3 behavior and zoom bar behavior: set to default full range
+					newDomain = this.services.zoom.getDefaultZoomBarDomain();
+				}
+
+				// only if zoomDomain needs update
+				if (
+					zoomDomain[0].valueOf() !== newDomain[0].valueOf() ||
+					zoomDomain[1].valueOf() !== newDomain[1].valueOf()
+				) {
+					// only dispatch zoom domain change event for triggering api call when event type equals to end
+					this.services.events.dispatchEvent(
+						Events.ZoomDomain.CHANGE,
+						{ newDomain }
+					);
+					setDomain(newDomain);
+				}
+			};
+
 			const brushed = () => {
 				const selection = event.selection;
 
 				if (selection !== null) {
-					// create xScale based on current zoomDomain
-					const xScale = scaleTime()
-						.range([0, width])
-						.domain(zoomDomain);
-
-					let newDomain = [
-						xScale.invert(selection[0]),
-						xScale.invert(selection[1])
-					];
-
-					// if selected start time and end time are the same
-					// reset to default full range
-					if (newDomain[0].valueOf() === newDomain[1].valueOf()) {
-						// same as d3 behavior and zoom bar behavior: set to default full range
-						newDomain = this.services.zoom.getDefaultZoomBarDomain();
-					}
-
-					// only if zoomDomain needs update
-					if (
-						zoomDomain[0].valueOf() !== newDomain[0].valueOf() ||
-						zoomDomain[1].valueOf() !== newDomain[1].valueOf()
-					) {
-						this.model.set(
-							{ zoomDomain: newDomain },
-							{ animate: false }
-						);
-					}
+					handleZoomDomain(selection[0], selection[1]);
 
 					// clear brush selection
 					brushArea.call(brush.move, null);
@@ -178,6 +211,26 @@ export class ChartBrush extends Component {
 				.on("end.brushed", brushed);
 
 			brushArea.call(brush);
+
+			backdrop.on("click", function () {
+				if (event.shiftKey) {
+					const coords = mouse(this);
+					const currentClickLocation = coords[0] - axesLeftMargin;
+
+					let leftPoint =
+						currentClickLocation - (width * zoomRatio) / 2;
+					if (leftPoint < 0) {
+						leftPoint = 0;
+					}
+					let rightPoint =
+						currentClickLocation + (width * zoomRatio) / 2;
+					if (rightPoint > width) {
+						rightPoint = width;
+					}
+
+					handleZoomDomain(leftPoint, rightPoint);
+				}
+			});
 		}
 	}
 }

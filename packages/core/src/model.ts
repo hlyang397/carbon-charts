@@ -5,6 +5,7 @@ import * as colorPalettes from "./services/colorPalettes";
 import { Events, ScaleTypes } from "./interfaces";
 
 // D3
+import { extent } from "d3-array";
 import { map } from "d3-collection";
 import { scaleOrdinal } from "d3-scale";
 import { stack } from "d3-shape";
@@ -301,8 +302,15 @@ export class ChartModel {
 	 * @param newOptions New options to be set
 	 */
 	setOptions(newOptions) {
+		const mergedOptions = Tools.merge(this.getOptions(), newOptions);
+		// these options need assignment, not just merge
+		if (Tools.getProperty(newOptions, "zoomBar", "top", "data")) {
+			mergedOptions.zoomBar.top.data = Tools.clone(
+				newOptions.zoomBar.top.data
+			);
+		}
 		this.set({
-			options: Tools.merge(this.getOptions(), newOptions)
+			options: mergedOptions
 		});
 	}
 

@@ -1,7 +1,7 @@
 // Internal Imports
 import { Component } from "../component";
 import { DOMUtils } from "../../services";
-import { Events } from "./../../interfaces";
+import { Events } from "../../interfaces";
 
 export class Title extends Component {
 	type = "title";
@@ -90,11 +90,9 @@ export class Title extends Component {
 
 	// computes the maximum space a title can take
 	protected getMaxTitleWidth() {
-		const containerWidth = DOMUtils.getSVGElementSize(
-			this.services.domUtils.getMainSVG(),
-			{ useAttr: true }
-		).width;
-		return containerWidth;
+		return DOMUtils.getSVGElementSize(this.parent.node(), {
+			useAttr: true
+		}).width;
 	}
 
 	/**

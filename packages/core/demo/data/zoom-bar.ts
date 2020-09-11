@@ -24,6 +24,15 @@ const definedZoomBarData = [
 	{ date: new Date(2019, 0, 19), value: 21300 }
 ];
 
+const defaultToolBarOptions = {
+	enabled: true,
+	overflowMenuItems: {
+		resetZoom: {
+			enabled: true
+		}
+	}
+};
+
 // utility function to update title and enable zoomBar option
 const addZoomBarToOptions = (
 	options,
@@ -56,6 +65,7 @@ const addZoomBarToOptions = (
 			}
 		};
 	}
+	options["toolbar"] = defaultToolBarOptions;
 	return options;
 };
 
@@ -120,6 +130,12 @@ export const zoomBarLineTimeSeriesInitDomainOptions = addZoomBarToOptions(
 );
 zoomBarLineTimeSeriesInitDomainOptions["title"] += " (initial zoomed domain)";
 zoomBarLineTimeSeriesInitDomainOptions.zoomBar.top.initialZoomDomain = initialZoomDomain;
+
+export const zoomBarEmptyStateData = barChart.stackedBarEmptyStateData;
+export const zoomBarEmptyStateOptions = addZoomBarToOptions(
+	Object.assign({}, barChart.stackedBarTimeSeriesOptions)
+);
+zoomBarEmptyStateOptions["title"] = "Zoom bar (empty state)";
 
 // assume no data set while loading is true
 export const zoomBarSkeletonData = [];

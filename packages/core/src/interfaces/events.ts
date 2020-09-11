@@ -117,6 +117,21 @@ export enum Tooltip {
 }
 
 /**
+ * enum of all toolbar events
+ */
+export enum Toolbar {
+	SHOW_OVERFLOW_MENU = "show-toolbar-overflow-menu",
+	HIDE_OVERFLOW_MENU = "hide-toolbar-overflow-menu"
+}
+
+/**
+ * enum of all events related to the zoom domain
+ */
+export enum ZoomDomain {
+	CHANGE = "zoom-domain-change"
+}
+
+/**
  * enum of all threshold events
  */
 export enum Threshold {
