@@ -123,41 +123,6 @@ export class ZoomBar extends Component {
 				return;
 			}
 
-			const initialZoomDomainInModel = this.model.get(
-				"initialZoomDomain"
-			);
-			// get initZoomDomain
-			const initialZoomDomainInProp = Tools.getProperty(
-				this.model.getOptions(),
-				"zoomBar",
-				"top",
-				"initialZoomDomain"
-			);
-
-			// update initialZoomDomain and set zoomDomain in model only if the configuration is changed
-			// not the same object, or both start date and end date are not equal
-			if (
-				!(
-					initialZoomDomainInModel === initialZoomDomainInProp ||
-					(initialZoomDomainInModel &&
-						initialZoomDomainInProp &&
-						initialZoomDomainInModel[0].valueOf() ===
-							initialZoomDomainInProp[0].valueOf() &&
-						initialZoomDomainInModel[1].valueOf() ===
-							initialZoomDomainInProp[1].valueOf())
-				)
-			) {
-				this.model.set(
-					{
-						initialZoomDomain: initialZoomDomainInProp,
-						zoomDomain: initialZoomDomainInProp
-							? initialZoomDomainInProp
-							: defaultDomain
-					},
-					{ skipUpdate: true }
-				);
-			}
-
 			// save defaultZoomBarDomain if not set yet
 			if (!this.initialZoomBarDomain) {
 				this.initialZoomBarDomain = defaultDomain;
@@ -202,15 +167,10 @@ export class ZoomBar extends Component {
 				);
 			}
 
-			this.xScale.range([axesLeftMargin, width]).domain(defaultDomain);
-
-			const handleWidth = Configuration.zoomBar.handleWidth;
 			this.xScale
-				.range([
-					axesLeftMargin + handleWidth / 2,
-					width - handleWidth / 2
-				])
+				.range([axesLeftMargin, width])
 				.domain(this.initialZoomBarDomain);
+
 			// keep max selection range
 			this.maxSelectionRange = this.xScale.range();
 
@@ -336,10 +296,7 @@ export class ZoomBar extends Component {
 				zoomDomain[0] !== newDomain[0] ||
 				zoomDomain[1] !== newDomain[1]
 			) {
-				this.model.set(
-					{ zoomDomain: newDomain, selectionRange: selection },
-					{ animate: false }
-				);
+				this.model.set({ zoomDomain: newDomain }, { animate: false });
 			}
 			// dispatch selection events
 			let zoomBarEventType;
@@ -385,7 +342,6 @@ export class ZoomBar extends Component {
 		const handleBarXDiff = -handleBarWidth / 2;
 		const handleYBarDiff = (handleHeight - handleBarHeight) / 2;
 
-		const ewHandleCursor = "ew-resize";
 		const displayStyle =
 			isDataLoading || isNaN(selection[0]) || isNaN(selection[1])
 				? "none"
@@ -398,22 +354,22 @@ export class ZoomBar extends Component {
 			.attr("x", function (d) {
 				if (d.type === "w") {
 					// handle should not exceed zoom bar range
-					return (
-						Math.max(selection[0], self.maxSelectionRange[0]) +
-						handleXDiff
+					return Math.max(
+						selection[0] + handleXDiff,
+						self.maxSelectionRange[0]
 					);
 				} else if (d.type === "e") {
 					// handle should not exceed zoom bar range
-					return (
-						Math.min(selection[1], self.maxSelectionRange[1]) +
-						handleXDiff
+					return Math.min(
+						selection[1] + handleXDiff,
+						self.maxSelectionRange[1] - handleWidth
 					);
 				}
 			})
 			.attr("y", 0)
 			.attr("width", handleWidth)
 			.attr("height", handleHeight)
-			.attr("cursor", ewHandleCursor)
+			.attr("cursor", "ew-resize")
 			.style("display", displayStyle);
 
 		// handle-bar
@@ -432,21 +388,21 @@ export class ZoomBar extends Component {
 		handleBars
 			.attr("x", function (d) {
 				if (d.type === "w") {
-					return (
-						Math.max(selection[0], self.maxSelectionRange[0]) +
-						handleBarXDiff
+					return Math.max(
+						selection[0] + handleBarXDiff,
+						self.maxSelectionRange[0] - handleXDiff + handleBarXDiff
 					);
 				} else if (d.type === "e") {
-					return (
-						Math.min(selection[1], self.maxSelectionRange[1]) +
-						handleBarXDiff
+					return Math.min(
+						selection[1] + handleBarXDiff,
+						self.maxSelectionRange[1] + handleXDiff + handleBarXDiff
 					);
 				}
 			})
 			.attr("y", handleYBarDiff)
 			.attr("width", handleBarWidth)
 			.attr("height", handleBarHeight)
-			.attr("cursor", ewHandleCursor)
+			.attr("cursor", "ew-resize")
 			.style("display", displayStyle);
 
 		// Update slider selected area
@@ -633,7 +589,6 @@ export class ZoomBar extends Component {
 		this.brush.on("start brush end", null); // remove event listener
 		this.services.events.removeEventListener(
 			Events.ZoomBar.UPDATE,
-			Events.ZoomDomain.CHANGE,
 			this.render.bind(this)
 		);
 	}
