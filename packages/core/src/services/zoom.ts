@@ -1,11 +1,11 @@
 // Internal Imports
 import { Service } from "./service";
 import { Tools } from "../tools";
+import { AxisPositions, Events, ScaleTypes } from "../interfaces";
+import * as Configuration from "../configuration";
 
 // D3 imports
 import { extent } from "d3-array";
-import { AxisPositions, Events, ScaleTypes } from "../interfaces";
-import * as Configuration from "../configuration";
 
 export class Zoom extends Service {
 	// filter out data not inside zoom domain
@@ -62,9 +62,7 @@ export class Zoom extends Service {
 		// get all dates (Number) in displayData
 		let allDates = [];
 		zoomBarData.forEach((data) => {
-			allDates = allDates.concat(
-				new Date(data[domainIdentifier]).getTime()
-			);
+			allDates = allDates.concat(Number(data[domainIdentifier]));
 		});
 		allDates = Tools.removeArrayDuplicates(allDates).sort();
 		// Go through all date values
@@ -74,7 +72,7 @@ export class Zoom extends Service {
 			const datum = {};
 
 			zoomBarData.forEach((data) => {
-				if (new Date(data[domainIdentifier]).getTime() === date) {
+				if (Number(data[domainIdentifier]) === date) {
 					sum += data[rangeIdentifier];
 				}
 			});
@@ -98,6 +96,14 @@ export class Zoom extends Service {
 		return cartesianScales.extendsDomain(
 			mainXAxisPosition,
 			extent(zoomBarData, (d: any) => d[domainIdentifier])
+		);
+	}
+
+	getZoomRatio() {
+		return Tools.getProperty(
+			this.model.getOptions(),
+			"zoomBar",
+			"zoomRatio"
 		);
 	}
 
@@ -232,14 +238,5 @@ export class Zoom extends Service {
 
 	isEmptyState() {
 		return this.getZoomBarData().length === 0;
-	}
-
-	getZoomRatio() {
-		return Tools.getProperty(
-			this.model.getOptions(),
-			"zoomBar",
-			"top",
-			"zoomRatio"
-		);
 	}
 }

@@ -20,8 +20,6 @@ export class ChartBrush extends Component {
 	frontSelectionSelector = "rect.frontSelection"; // needs to match the class name in _grid-brush.scss
 
 	render(animate = true) {
-		const zoomRatio = this.services.zoom.getZoomRatio();
-
 		const svg = this.parent;
 		// use this area to display selection above all graphs
 		const frontSelectionArea = this.getContainerSVG();
@@ -55,11 +53,6 @@ export class ChartBrush extends Component {
 		}
 
 		const { cartesianScales } = this.services;
-		let axesLeftMargin = 0;
-		const axesMargins = this.model.get("axesMargins");
-		if (axesMargins && axesMargins.left) {
-			axesLeftMargin = axesMargins.left;
-		}
 		const mainXScaleType = cartesianScales.getMainXScaleType();
 		const mainXScale = cartesianScales.getMainXScale();
 		const [xScaleStart, xScaleEnd] = mainXScale.range();
@@ -69,10 +62,6 @@ export class ChartBrush extends Component {
 			this.frontSelectionSelector
 		);
 
-		const setDomain = (newDomain) => {
-			this.model.set({ zoomDomain: newDomain }, { animate: false });
-		};
-
 		if (mainXScale && mainXScaleType === ScaleTypes.TIME) {
 			// get current zoomDomain
 			let zoomDomain = this.model.get("zoomDomain");
@@ -80,7 +69,10 @@ export class ChartBrush extends Component {
 				// default to full range with extended domain
 				zoomDomain = this.services.zoom.getDefaultZoomBarDomain();
 				if (zoomDomain) {
-					setDomain(zoomDomain);
+					this.model.set(
+						{ zoomDomain: zoomDomain },
+						{ animate: false }
+					);
 				}
 			}
 
@@ -107,9 +99,10 @@ export class ChartBrush extends Component {
 				frontSelection.attr("stroke-dasharray", dashArray);
 			};
 
-			const eventHandler = () => {
+			const brushEventHandler = () => {
+				// selection range: [0, width]
 				const selection = event.selection;
-				if (selection === null) {
+				if (selection === null || selection[0] === selection[1]) {
 					return;
 				}
 
@@ -123,50 +116,17 @@ export class ChartBrush extends Component {
 					.style("display", null);
 
 				updateSelectionDash(selection);
-
-				const xScale = scaleTime().range([0, width]).domain(zoomDomain);
-
-				const newDomain = [
-					xScale.invert(selection[0]),
-					xScale.invert(selection[1])
-				];
-				if (
-					selection != null &&
-					event.sourceEvent != null &&
-					(event.sourceEvent.type === "mousemove" ||
-						event.sourceEvent.type === "mouseup" ||
-						event.sourceEvent.type === "mousedown" ||
-						event.sourceEvent.type === "touchstart" ||
-						event.sourceEvent.type === "touchmove" ||
-						event.sourceEvent.type === "touchend")
-				) {
-					// dispatch selection events
-					let zoomBarEventType;
-					if (event.type === "start") {
-						zoomBarEventType = Events.ZoomBar.SELECTION_START;
-					} else if (event.type === "brush") {
-						zoomBarEventType = Events.ZoomBar.SELECTION_IN_PROGRESS;
-					} else if (event.type === "end") {
-						zoomBarEventType = Events.ZoomBar.SELECTION_END;
-					}
-					this.services.events.dispatchEvent(zoomBarEventType, {
-						selection,
-						newDomain
-					});
-				}
 			};
 
-			const handleZoomDomain = (startPoint, endPoint) => {
+			// assume max range is [0, width]
+			const updateZoomDomain = (startPoint, endPoint) => {
 				// create xScale based on current zoomDomain
-				const xScale = scaleTime()
-					.range([axesLeftMargin, width])
-					.domain(zoomDomain);
+				const xScale = scaleTime().range([0, width]).domain(zoomDomain);
 
 				let newDomain = [
 					xScale.invert(startPoint),
 					xScale.invert(endPoint)
 				];
-
 				// if selected start time and end time are the same
 				// reset to default full range
 				if (newDomain[0].valueOf() === newDomain[1].valueOf()) {
@@ -179,20 +139,17 @@ export class ChartBrush extends Component {
 					zoomDomain[0].valueOf() !== newDomain[0].valueOf() ||
 					zoomDomain[1].valueOf() !== newDomain[1].valueOf()
 				) {
-					// only dispatch zoom domain change event for triggering api call when event type equals to end
-					this.services.events.dispatchEvent(
-						Events.ZoomDomain.CHANGE,
-						{ newDomain }
-					);
-					setDomain(newDomain);
+					this.services.zoom.handleDomainChange(newDomain);
 				}
 			};
 
 			const brushed = () => {
+				// max selection range: [0, width]
 				const selection = event.selection;
 
 				if (selection !== null) {
-					handleZoomDomain(selection[0], selection[1]);
+					// updateZoomDomain assumes max range is [0, width]
+					updateZoomDomain(selection[0], selection[1]);
 
 					// clear brush selection
 					brushArea.call(brush.move, null);
@@ -200,35 +157,33 @@ export class ChartBrush extends Component {
 					frontSelection.style("display", "none");
 				}
 			};
-
 			// leave some space to display selection strokes besides axis
 			const brush = brushX()
 				.extent([
 					[0, 0],
 					[width - 1, height]
 				])
-				.on("start brush end", eventHandler)
+				.on("start brush end", brushEventHandler)
 				.on("end.brushed", brushed);
 
 			brushArea.call(brush);
 
+			const zoomRatio = this.services.zoom.getZoomRatio();
 			backdrop.on("click", function () {
 				if (event.shiftKey) {
-					const coords = mouse(this);
-					const currentClickLocation = coords[0] - axesLeftMargin;
+					// clickedX range: [0, width]
+					const clickedX = mouse(brushArea.node())[0];
 
-					let leftPoint =
-						currentClickLocation - (width * zoomRatio) / 2;
+					let leftPoint = clickedX - (width * zoomRatio) / 2;
 					if (leftPoint < 0) {
 						leftPoint = 0;
 					}
-					let rightPoint =
-						currentClickLocation + (width * zoomRatio) / 2;
+					let rightPoint = clickedX + (width * zoomRatio) / 2;
 					if (rightPoint > width) {
 						rightPoint = width;
 					}
-
-					handleZoomDomain(leftPoint, rightPoint);
+					// updateZoomDomain assumes max range is [0, width]
+					updateZoomDomain(leftPoint, rightPoint);
 				}
 			});
 		}
