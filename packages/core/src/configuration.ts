@@ -86,7 +86,6 @@ export const ruler: RulerOptions = {
 	enabled: true
 };
 
-
 /**
  * Tooltip options
  */
@@ -174,7 +173,6 @@ const axisChart: AxisChartOptions = Tools.merge({}, chart, {
 		top: {
 			enabled: false,
 			type: ZoomBarTypes.GRAPH_VIEW,
-			zoomRatio: 0.4,
 			refreshRangeAxisLabel: false
 		} as ZoomBarOptions
 	} as ZoomBarsOptions,
