@@ -190,11 +190,13 @@ export class Zoom extends Service {
 		}
 	}
 
-	handleDomainChange(newDomain) {
+	handleDomainChange(newDomain, configs = { dispatchEvent: true }) {
 		this.model.set({ zoomDomain: newDomain }, { animate: false });
-		this.services.events.dispatchEvent(Events.ZoomDomain.CHANGE, {
-			newDomain
-		});
+		if (configs.dispatchEvent) {
+			this.services.events.dispatchEvent(Events.ZoomDomain.CHANGE, {
+				newDomain
+			});
+		}
 	}
 
 	isZoomBarEnabled() {
